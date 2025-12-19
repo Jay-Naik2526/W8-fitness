@@ -32,7 +32,7 @@ export default function Profile() {
         const realId = parsedUser.id || parsedUser._id;
 
         try {
-            const res = await fetch(`http://w8-fitness-backend-api.onrender.com/api/ai/stats-history/${realId}`);
+            const res = await fetch(`https://w8-fitness-backend-api.onrender.com/api/ai/stats-history/${realId}`);
             if (res.ok) {
                 const history = await res.json();
                 

@@ -45,7 +45,7 @@ export default function Fuel() {
 
         // B. Fetch from Database (Persistence Check)
         // This ensures that if you switch devices or refresh, the data comes back.
-        fetch(`http://w8-fitness-backend-api.onrender.com/api/auth/my-diet/${realId}`)
+        fetch(`https://w8-fitness-backend-api.onrender.com/api/auth/my-diet/${realId}`)
             .then(res => res.json())
             .then(data => {
                 if (data && data.week) {
@@ -77,7 +77,7 @@ export default function Fuel() {
     const realId = storedUser ? (JSON.parse(storedUser).id || JSON.parse(storedUser)._id) : null;
 
     try {
-      const res = await fetch('http://w8-fitness-backend-api.onrender.com/api/ai/meal-plan', {
+      const res = await fetch('https://w8-fitness-backend-api.onrender.com/api/ai/meal-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

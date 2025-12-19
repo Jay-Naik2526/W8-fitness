@@ -12,7 +12,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
         try {
-            const res = await fetch('http://w8-fitness-backend-api.onrender.com/api/admin/stats');
+            const res = await fetch('https://w8-fitness-backend-api.onrender.com/api/admin/stats');
             if (res.ok) setStats(await res.json());
         } catch (err) { console.error("Admin Offline"); }
     };
@@ -23,7 +23,7 @@ export default function AdminDashboard() {
       if (!broadcastMsg.trim()) return;
       setSending(true);
       try {
-          const res = await fetch('http://w8-fitness-backend-api.onrender.com/api/admin/notify-all', {
+          const res = await fetch('https://w8-fitness-backend-api.onrender.com/api/admin/notify-all', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ message: broadcastMsg, type: 'ALERT' })

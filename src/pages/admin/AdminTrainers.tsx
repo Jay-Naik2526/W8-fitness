@@ -16,7 +16,7 @@ export default function AdminTrainers() {
 
   const fetchTrainers = async () => {
       try {
-          const res = await fetch('http://w8-fitness-backend-api.onrender.com/api/admin/trainers');
+          const res = await fetch('https://w8-fitness-backend-api.onrender.com/api/admin/trainers');
           if (res.ok) setTrainers(await res.json());
       } catch (e) { console.error("Fetch Error"); }
   };
@@ -24,7 +24,7 @@ export default function AdminTrainers() {
   const handleAddTrainer = async (e: React.FormEvent) => {
       e.preventDefault();
       // Calls our new Auth Route to create Active Trainer directly
-      const res = await fetch('http://w8-fitness-backend-api.onrender.com/api/auth/create-trainer', {
+      const res = await fetch('https://w8-fitness-backend-api.onrender.com/api/auth/create-trainer', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newTrainer)
@@ -45,13 +45,13 @@ export default function AdminTrainers() {
   const handleDeleteTrainer = async (id: string, e: any) => {
       e.stopPropagation();
       if(!window.confirm("CONFIRM TERMINATION? This will unassign all their clients.")) return;
-      const res = await fetch(`http://w8-fitness-backend-api.onrender.com/api/admin/delete-trainer/${id}`, { method: 'DELETE' });
+      const res = await fetch(`https://w8-fitness-backend-api.onrender.com/api/admin/delete-trainer/${id}`, { method: 'DELETE' });
       if (res.ok) fetchTrainers();
   };
 
   const viewSquad = async (trainer: any) => {
       setSelectedTrainer(trainer);
-      const res = await fetch(`http://w8-fitness-backend-api.onrender.com/api/admin/squad/${trainer._id}`);
+      const res = await fetch(`https://w8-fitness-backend-api.onrender.com/api/admin/squad/${trainer._id}`);
       if (res.ok) setSquad(await res.json());
   };
 

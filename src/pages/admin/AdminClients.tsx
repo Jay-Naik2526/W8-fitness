@@ -15,8 +15,8 @@ export default function AdminClients() {
   // FIXED: Wrapped in useCallback to satisfy dependency rules
   const fetchData = useCallback(async () => {
      try {
-         const resC = await fetch('http://w8-fitness-backend-api.onrender.com/api/admin/clients');
-         const resT = await fetch('http://w8-fitness-backend-api.onrender.com/api/admin/trainers');
+         const resC = await fetch('https://w8-fitness-backend-api.onrender.com/api/admin/clients');
+         const resT = await fetch('https://w8-fitness-backend-api.onrender.com/api/admin/trainers');
          
          if (resC.ok && resT.ok) {
              const clientData = await resC.json();
@@ -33,7 +33,7 @@ export default function AdminClients() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const assignTrainer = async (clientId: string, trainerId: string) => {
-     await fetch('http://w8-fitness-backend-api.onrender.com/api/admin/assign', {
+     await fetch('https://w8-fitness-backend-api.onrender.com/api/admin/assign', {
          method: 'PUT',
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify({ clientId, trainerId })
@@ -43,7 +43,7 @@ export default function AdminClients() {
 
   const approveClient = async (clientId: string) => {
       if(!window.confirm("CONFIRM CLEARANCE: Approve this operative?")) return;
-      const res = await fetch(`http://w8-fitness-backend-api.onrender.com/api/auth/approve-user/${clientId}`, {
+      const res = await fetch(`https://w8-fitness-backend-api.onrender.com/api/auth/approve-user/${clientId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' }
       });
@@ -53,7 +53,7 @@ export default function AdminClients() {
   const handleDelete = async (clientId: string) => {
       if(!window.confirm("WARNING: PERMANENTLY DELETE THIS OPERATIVE?")) return;
       
-      const res = await fetch(`http://w8-fitness-backend-api.onrender.com/api/admin/delete-client/${clientId}`, {
+      const res = await fetch(`https://w8-fitness-backend-api.onrender.com/api/admin/delete-client/${clientId}`, {
           method: 'DELETE'
       });
 
@@ -67,7 +67,7 @@ export default function AdminClients() {
 
   const sendIntel = async () => {
       if(!messageText) return;
-      await fetch('http://w8-fitness-backend-api.onrender.com/api/admin/notify', {
+      await fetch('https://w8-fitness-backend-api.onrender.com/api/admin/notify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: messaging._id, message: messageText, type: 'MISSION' })
@@ -78,7 +78,7 @@ export default function AdminClients() {
   };
 
   const inspectClient = async (client: any) => {
-     const res = await fetch(`http://w8-fitness-backend-api.onrender.com/api/admin/inspect/${client._id}`);
+     const res = await fetch(`https://w8-fitness-backend-api.onrender.com/api/admin/inspect/${client._id}`);
      if (res.ok) {
          const data = await res.json();
          setInspecting({ workout: data.workout, diet: data.diet, clientName: client.name });

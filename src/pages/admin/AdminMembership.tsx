@@ -10,25 +10,25 @@ export default function AdminMembership() {
   useEffect(() => { fetchPlans(); }, []);
 
   const fetchPlans = async () => {
-      const res = await fetch('http://w8-fitness-backend-api.onrender.com/api/admin/plans');
+      const res = await fetch('https://w8-fitness-backend-api.onrender.com/api/admin/plans');
       if (res.ok) setPlans(await res.json());
   };
 
   const handleSeed = async () => {
       if(!window.confirm("Reset all prices to Default?")) return;
-      await fetch('http://w8-fitness-backend-api.onrender.com/api/admin/seed-plans', { method: 'POST' });
+      await fetch('https://w8-fitness-backend-api.onrender.com/api/admin/seed-plans', { method: 'POST' });
       fetchPlans();
   };
 
   const handleDelete = async (id: string) => {
       if(!window.confirm("Remove this plan?")) return;
-      await fetch(`http://w8-fitness-backend-api.onrender.com/api/admin/delete-plan/${id}`, { method: 'DELETE' });
+      await fetch(`https://w8-fitness-backend-api.onrender.com/api/admin/delete-plan/${id}`, { method: 'DELETE' });
       fetchPlans();
   };
 
   const handleAdd = async () => {
       const featuresArray = newPlan.features.split(',').map(s => s.trim());
-      await fetch('http://w8-fitness-backend-api.onrender.com/api/admin/add-plan', {
+      await fetch('https://w8-fitness-backend-api.onrender.com/api/admin/add-plan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...newPlan, features: featuresArray })

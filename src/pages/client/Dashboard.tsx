@@ -67,7 +67,7 @@ export default function Dashboard() {
 
     // A. FETCH BASIC STATS
     try {
-      const res = await fetch(`http://w8-fitness-backend-api.onrender.com/api/auth/stats/${realId}`);
+      const res = await fetch(`https://w8-fitness-backend-api.onrender.com/api/auth/stats/${realId}`);
       if (res.ok) {
         const data = await res.json();
         setStats(data);
@@ -77,7 +77,7 @@ export default function Dashboard() {
 
     // B. FETCH WEEKLY PLAN FOR DYNAMIC CALORIES
     try {
-        const resPlan = await fetch(`http://w8-fitness-backend-api.onrender.com/api/ai/weekly-plan/${realId}`);
+        const resPlan = await fetch(`https://w8-fitness-backend-api.onrender.com/api/ai/weekly-plan/${realId}`);
         if (resPlan.ok) {
             const planData = await resPlan.json();
             if (planData && planData.days) {
@@ -110,7 +110,7 @@ export default function Dashboard() {
 
     // D. FETCH NOTIFICATIONS (NEW COMMS LINK)
     try {
-        const resNotes = await fetch(`http://w8-fitness-backend-api.onrender.com/api/auth/notifications/${realId}`);
+        const resNotes = await fetch(`https://w8-fitness-backend-api.onrender.com/api/auth/notifications/${realId}`);
         if (resNotes.ok) {
             const data = await resNotes.json();
             setNotifications(data);
@@ -127,7 +127,7 @@ export default function Dashboard() {
     const realId = parsedUser.id || parsedUser._id;
 
     try {
-      const res = await fetch('http://w8-fitness-backend-api.onrender.com/api/auth/checkin', {
+      const res = await fetch('https://w8-fitness-backend-api.onrender.com/api/auth/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: realId })
