@@ -105,7 +105,7 @@ export default function LandingPage() {
 
   useEffect(() => {
      // 1. FETCH TRAINERS
-     fetch('http://localhost:5000/api/auth/public-trainers')
+     fetch('http://w8-fitness-backend-api.onrender.com/api/auth/public-trainers')
        .then(res => res.json())
        .then(data => {
            setMaleTrainers(data.filter((t: any) => t.gender === 'Male'));
@@ -114,7 +114,7 @@ export default function LandingPage() {
        .catch(err => console.error("Roster Offline"));
 
      // 2. FETCH PRICING & GROUP
-     fetch('http://localhost:5000/api/auth/public-plans')
+     fetch('http://w8-fitness-backend-api.onrender.com/api/auth/public-plans')
        .then(res => res.json())
        .then(data => {
            const categories = [

@@ -71,7 +71,7 @@ export default function Architect() {
         const realId = JSON.parse(storedUser).id || JSON.parse(storedUser)._id;
 
         try {
-            const res = await fetch(`http://localhost:5000/api/ai/weekly-plan/${realId}`);
+            const res = await fetch(`http://w8-fitness-backend-api.onrender.com/api/ai/weekly-plan/${realId}`);
             if (res.ok) {
                 const data = await res.json();
                 if (data) {
@@ -181,7 +181,7 @@ export default function Architect() {
           inventory: GYM_INVENTORY // <--- CRITICAL: Sending your exact equipment
       };
 
-      const res = await fetch('http://localhost:5000/api/ai/generate-weekly', {
+      const res = await fetch('http://w8-fitness-backend-api.onrender.com/api/ai/generate-weekly', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -208,7 +208,7 @@ export default function Architect() {
 
     try {
         let cleanName = exerciseName.replace(/\(.*\)/, '').replace(/[^a-zA-Z ]/g, "").trim();
-        const res = await fetch(`http://localhost:5000/api/proxy/video?q=${encodeURIComponent(cleanName)}`);
+        const res = await fetch(`http://w8-fitness-backend-api.onrender.com/api/proxy/video?q=${encodeURIComponent(cleanName)}`);
         const data = await res.json();
         
         if (res.ok && data.videoId) setVideoId(data.videoId);
@@ -221,7 +221,7 @@ export default function Architect() {
     if (editingDay === dayIndex) {
        setSaving(true);
        try {
-           await fetch('http://localhost:5000/api/ai/update-plan', {
+           await fetch('http://w8-fitness-backend-api.onrender.com/api/ai/update-plan', {
                method: 'PUT',
                headers: { 'Content-Type': 'application/json' },
                body: JSON.stringify({ planId: weeklyPlan._id, updatedDays: weeklyPlan.days })

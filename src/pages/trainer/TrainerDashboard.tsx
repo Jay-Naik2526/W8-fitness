@@ -8,7 +8,7 @@ export default function TrainerDashboard() {
   const trainerId = JSON.parse(localStorage.getItem('w8_user') || '{}').id; // Get logged in trainer ID
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/trainer/squad/${trainerId}`)
+    fetch(`http://w8-fitness-backend-api.onrender.com/api/trainer/squad/${trainerId}`)
       .then(res => res.json())
       .then(data => { setSquad(data); setLoading(false); })
       .catch(err => console.error(err));

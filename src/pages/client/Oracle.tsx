@@ -40,7 +40,7 @@ export default function Oracle() {
       }));
 
       // 3. Send to Backend
-      const res = await fetch('http://localhost:5000/api/ai/chat', {
+      const res = await fetch('http://w8-fitness-backend-api.onrender.com/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: currentInput, history: historyForAI })

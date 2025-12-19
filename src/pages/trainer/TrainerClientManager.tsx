@@ -12,7 +12,7 @@ export default function TrainerClientManager() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/trainer/protocols/${clientId}`)
+    fetch(`http://w8-fitness-backend-api.onrender.com/api/trainer/protocols/${clientId}`)
       .then(res => res.json())
       .then(d => { setData(d); setLoading(false); });
   }, [clientId]);
@@ -20,7 +20,7 @@ export default function TrainerClientManager() {
   // --- SAVE HANDLERS ---
   const handleSaveWorkout = async () => {
       setSaving(true);
-      await fetch('http://localhost:5000/api/trainer/update-workout', {
+      await fetch('http://w8-fitness-backend-api.onrender.com/api/trainer/update-workout', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ planId: data.workout._id, days: data.workout.days })
@@ -31,7 +31,7 @@ export default function TrainerClientManager() {
 
   const handleSaveDiet = async () => {
       setSaving(true);
-      await fetch('http://localhost:5000/api/trainer/update-diet', {
+      await fetch('http://w8-fitness-backend-api.onrender.com/api/trainer/update-diet', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ planId: data.diet._id, week: data.diet.week })

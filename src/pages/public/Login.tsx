@@ -66,7 +66,7 @@ export default function Login() {
     const endpoint = isRegister ? 'register' : 'login';
     
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
+      const res = await fetch(`http://w8-fitness-backend-api.onrender.com/api/auth/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

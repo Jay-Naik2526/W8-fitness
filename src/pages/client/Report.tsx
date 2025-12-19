@@ -30,11 +30,11 @@ export default function Report() {
             const realId = JSON.parse(storedUser).id || JSON.parse(storedUser)._id;
             try {
                 // Active Plan
-                const resPlan = await fetch(`http://localhost:5000/api/ai/weekly-plan/${realId}`);
+                const resPlan = await fetch(`http://w8-fitness-backend-api.onrender.com/api/ai/weekly-plan/${realId}`);
                 if (resPlan.ok) setWorkoutData(await resPlan.json());
 
                 // History
-                const resHist = await fetch(`http://localhost:5000/api/ai/stats-history/${realId}`);
+                const resHist = await fetch(`http://w8-fitness-backend-api.onrender.com/api/ai/stats-history/${realId}`);
                 if (resHist.ok) setHistoryData(await resHist.json());
 
             } catch (err) { console.error("Intel Uplink Failed", err); }
