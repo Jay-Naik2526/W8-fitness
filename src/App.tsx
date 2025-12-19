@@ -72,6 +72,7 @@ function App() {
   const hideNav = 
     location.pathname === '/' || 
     location.pathname === '/login' || 
+    location.pathname === '/oracle' || // <--- ADDED THIS LINE
     location.pathname.startsWith('/trainer') || 
     location.pathname.startsWith('/admin');
 
@@ -107,7 +108,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* Navigation Bar (Hidden for Admin/Trainer) */}
+      {/* Navigation Bar (Hidden for Admin/Trainer/Oracle) */}
       {!hideNav && <Navigation />}
     </div>
   );
