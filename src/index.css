@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --w8-red: #D60000;
+  /* Safe Area Variables for iPhones */
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent; /* Removes blue flash on tap */
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-black text-white antialiased overflow-x-hidden;
+    /* Prevent "Pull to Refresh" on mobile to feel native */
+    overscroll-behavior-y: none; 
+  }
+}
+
+@layer utilities {
+  /* Hides Scrollbar but keeps functionality */
+  .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+  }
+  .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+  }
+
+  /* Safe Area Utilities */
+  .pt-safe {
+    padding-top: var(--sat);
+  }
+  .pb-safe {
+    padding-bottom: calc(var(--sab) + 1rem);
+  }
+}
+
+/* Custom Animation for "Shimmer" effects */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
