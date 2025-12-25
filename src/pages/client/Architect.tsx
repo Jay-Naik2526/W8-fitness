@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
-import { Crosshair, Save, FileText, Lock, Edit3, Calendar, Dumbbell, PlayCircle, X, Loader, Youtube, Flame, Clock, Home, Settings, Disc } from "lucide-react";
+import { Crosshair, Save, FileText, Lock, Edit3, Calendar, Dumbbell, PlayCircle, X, Loader, Youtube, Flame, Clock, Home, Settings, Disc, Coffee } from "lucide-react";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -15,7 +15,6 @@ FREE WEIGHTS: Dumbbells (2.5kg to 40kg in 2.5kg increments).
 PLATES (BUMPER): Pairs of 2.5kg, 5kg, 10kg, 15kg, 20kg, 25kg.
 `;
 
-// Types for the Scheduler
 type EquipmentType = 'Full Gym' | 'Dumbbells' | 'Bodyweight';
 type DurationType = '30' | '45' | '60' | '90';
 
@@ -47,7 +46,7 @@ export default function Architect() {
   const [config, setConfig] = useState({
     bench: '', squat: '', deadlift: '',
     goal: 'Hypertrophy',
-    startDate: new Date().toISOString().split('T')[0]
+    startDate: new Date().toISOString().split('T')[0] 
   });
 
   // --- SCHEDULE STATE ---
@@ -63,20 +62,25 @@ export default function Architect() {
 
   const [weeklyPlan, setWeeklyPlan] = useState<any>(null);
 
-  // --- LOAD DATA ON START ---
+  // --- LOAD DATA ---
   useEffect(() => {
     const fetchPlan = async () => {
         const storedUser = localStorage.getItem('w8_user');
         if (!storedUser) return;
         const realId = JSON.parse(storedUser).id || JSON.parse(storedUser)._id;
 
+        const API_BASE = window.location.hostname === "localhost" 
+          ? "http://localhost:5000" 
+          : "https://w8-fitness-backend-api.onrender.com";
+
         try {
-            const res = await fetch(`https://w8-fitness-backend-api.onrender.com/api/ai/weekly-plan/${realId}`);
+            const res = await fetch(`${API_BASE}/api/ai/weekly-plan/${realId}`);
             if (res.ok) {
                 const data = await res.json();
                 if (data) {
                     setWeeklyPlan(data);
                     setStep(3);
+                    setActiveDayIndex(0);
                 }
             }
         } catch (err) { console.error("Load failed", err); }
@@ -92,59 +96,80 @@ export default function Architect() {
     }
   }, []);
 
-  // --- HELPER: CALCULATE PLATE MATH (CUSTOM INVENTORY) ---
   const getPlateMath = (exerciseName: string, weightVal: any) => {
-    // 1. If weight is text (e.g., "Moderate"), return it directly
-    const weight = parseInt(weightVal);
-    if (isNaN(weight)) return String(weightVal).toUpperCase();
-
+    // If complex string, try to extract max weight
+    let weight = parseInt(weightVal);
+    
+    // Smart Extract: If string contains "x 80kg", grab 80
+    if (isNaN(weight) && typeof weightVal === 'string') {
+        const matches = weightVal.match(/(\d+)\s*kg/g);
+        if (matches) {
+           // Get the highest number mentioned
+           const nums = matches.map((m:any) => parseInt(m));
+           weight = Math.max(...nums);
+        }
+    }
+    
+    if (isNaN(weight)) return "See Note";
     const name = exerciseName.toLowerCase();
     
-    // 2. DUMBBELL CHECK (2.5kg increments)
     if (name.includes('dumbbell') || name.includes('db ')) {
         const dbWeight = Math.round(weight / 2.5) * 2.5; 
         return `USE ${dbWeight} KG DUMBBELLS`;
     }
-
-    // 3. MACHINE CHECK
     if (name.includes('machine') || name.includes('press') || name.includes('extension') || name.includes('curl') || name.includes('row')) {
         if (!name.includes('bench') && !name.includes('squat') && !name.includes('deadlift')) {
-            return `SET PIN / LOAD: ${weight} KG`;
+            return `SET PIN: ${weight} KG`;
         }
     }
-
-    // 4. BARBELL PLATE MATH (20kg Bar + Specific Bumper Set)
-    if (weight < 20) return "BAR ONLY (20KG)";
-    
+    if (weight < 20) return "BAR ONLY";
     const oneSide = (weight - 20) / 2;
-    if (oneSide <= 0) return "BAR ONLY (20KG)";
-
-    // Your Specific Bumper Plate Set
+    if (oneSide <= 0) return "BAR ONLY";
     const availablePlates = [25, 20, 15, 10, 5, 2.5]; 
     let remaining = oneSide;
     const platesNeeded: number[] = [];
-
     availablePlates.forEach(plate => {
         while (remaining >= plate) {
             platesNeeded.push(plate);
             remaining -= plate;
         }
     });
-
     if (platesNeeded.length === 0) return `LOAD: ${weight} KG`;
-    
     return `[ ${platesNeeded.join(' + ')} ] / SIDE`;
   };
 
-  // --- HELPER: CALORIES (Safe Handling for Text Weights) ---
+  // --- SMART CALORIE CALCULATOR (FIXED FOR NaN) ---
   const calculateCalories = (day: any) => {
     if (!day || !day.exercises) return 0;
-    return Math.round(day.exercises.reduce((acc: number, ex: any) => {
-        // Fallback to 20kg if weight is text ("Moderate")
-        const safeWeight = parseInt(ex.weight) || 20; 
-        const factor = safeWeight > 60 ? 0.15 : 0.08; 
-        return acc + ((parseInt(ex.sets) * parseInt(ex.reps) * factor) + 45);
-    }, 0));
+
+    const total = day.exercises.reduce((acc: number, ex: any) => {
+        // 1. Try to find Total Volume from string: "12x20kg"
+        let setVolume = 0;
+        let setsCount = 0;
+        
+        if (typeof ex.weight === 'string') {
+            const regex = /(\d+)\s*x\s*(\d+)/g;
+            let match;
+            while ((match = regex.exec(ex.weight)) !== null) {
+                const reps = parseInt(match[1]);
+                const load = parseInt(match[2]);
+                const intensity = load > 60 ? 0.1 : 0.05;
+                setVolume += (reps * intensity * 5); // Approximate burn per set
+                setsCount++;
+            }
+        }
+
+        // 2. Fallback if regex failed (Simple calculation)
+        if (setVolume === 0) {
+            const safeSets = parseInt(ex.sets) || 3;
+            const safeReps = 10; // Avg
+            setVolume = safeSets * safeReps * 0.5; // Baseline
+        }
+
+        return acc + setVolume + 20; // +20 base burn per exercise
+    }, 0);
+
+    return Math.round(total);
   };
 
   const toggleDay = (index: number) => {
@@ -159,29 +184,29 @@ export default function Architect() {
     setSchedule(newSched);
   };
 
-  // --- GENERATE NEW PLAN (PASSING INVENTORY) ---
   const handleGenerate = async () => {
     if (!config.bench || !config.squat || !config.deadlift) return;
     
-    const activeDays = schedule.filter(d => d.active);
-    if (activeDays.length === 0) {
-        alert("PROTOCOL ERROR: Activate at least one training day.");
-        return;
-    }
-
+    // --- FIX: Send ALL days, let backend decide REST based on 'active' flag ---
+    // (Previously we only sent active days, confusing the AI)
+    
     setStep(2);
     try {
       const storedUser = localStorage.getItem('w8_user');
       const realId = storedUser ? JSON.parse(storedUser).id || JSON.parse(storedUser)._id : null;
 
+      const API_BASE = window.location.hostname === "localhost" 
+          ? "http://localhost:5000" 
+          : "https://w8-fitness-backend-api.onrender.com";
+
       const payload = {
           userId: realId,
           stats: { ...config },
-          schedule: activeDays,
-          inventory: GYM_INVENTORY // <--- CRITICAL: Sending your exact equipment
+          schedule: schedule, // <--- SEND FULL SCHEDULE
+          inventory: GYM_INVENTORY 
       };
 
-      const res = await fetch('https://w8-fitness-backend-api.onrender.com/api/ai/generate-weekly', {
+      const res = await fetch(`${API_BASE}/api/ai/generate-weekly`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -192,6 +217,7 @@ export default function Architect() {
 
       setWeeklyPlan(data.plan);
       setStep(3);
+      setActiveDayIndex(0); 
     } catch (error: any) {
       console.error(error);
       setStep(1);
@@ -206,9 +232,13 @@ export default function Architect() {
     setVideoId(null);
     setErrorMsg("");
 
+    const API_BASE = window.location.hostname === "localhost" 
+          ? "http://localhost:5000" 
+          : "https://w8-fitness-backend-api.onrender.com";
+
     try {
         let cleanName = exerciseName.replace(/\(.*\)/, '').replace(/[^a-zA-Z ]/g, "").trim();
-        const res = await fetch(`https://w8-fitness-backend-api.onrender.com/api/proxy/video?q=${encodeURIComponent(cleanName)}`);
+        const res = await fetch(`${API_BASE}/api/proxy/video?q=${encodeURIComponent(cleanName)}`);
         const data = await res.json();
         
         if (res.ok && data.videoId) setVideoId(data.videoId);
@@ -218,10 +248,14 @@ export default function Architect() {
   };
 
   const toggleEdit = async (dayIndex: number) => {
+    const API_BASE = window.location.hostname === "localhost" 
+          ? "http://localhost:5000" 
+          : "https://w8-fitness-backend-api.onrender.com";
+
     if (editingDay === dayIndex) {
        setSaving(true);
        try {
-           await fetch('https://w8-fitness-backend-api.onrender.com/api/ai/update-plan', {
+           await fetch(`${API_BASE}/api/ai/update-plan`, {
                method: 'PUT',
                headers: { 'Content-Type': 'application/json' },
                body: JSON.stringify({ planId: weeklyPlan._id, updatedDays: weeklyPlan.days })
@@ -254,7 +288,7 @@ export default function Architect() {
       
       const tableData = day.exercises.map((ex: any) => {
           const loadInfo = getPlateMath(ex.name, ex.weight); 
-          return [ex.name, `${ex.sets} x ${ex.reps}`, `${ex.weight} kg\n(${loadInfo})`, ex.notes];
+          return [ex.name, `${ex.sets} x ${ex.reps}`, `${ex.weight}\n(${loadInfo})`, ex.notes];
       });
 
       autoTable(doc, { 
@@ -370,72 +404,85 @@ export default function Architect() {
 
         {step === 3 && weeklyPlan && (
           <motion.div key="result" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="pb-20">
+            
             <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide mb-4">
-               {weeklyPlan.days.map((day: any, index: number) => (
-                  <button key={index} onClick={() => setActiveDayIndex(index)} className={`flex-shrink-0 px-5 py-3 rounded-lg border flex flex-col items-center min-w-[80px] transition-all ${activeDayIndex === index ? 'bg-w8-red border-w8-red text-white' : 'bg-white/5 border-white/10 text-gray-500'}`}>
-                     <span className="text-[10px] font-bold uppercase">{new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}</span>
-                     <span className="text-lg font-black">{new Date(day.date).getDate()}</span>
-                  </button>
-               ))}
+               {weeklyPlan.days.map((day: any, index: number) => {
+                  const dayObj = new Date(day.date);
+                  const isToday = new Date().toDateString() === dayObj.toDateString();
+                  
+                  return (
+                      <button key={index} onClick={() => setActiveDayIndex(index)} className={`flex-shrink-0 px-5 py-3 rounded-lg border flex flex-col items-center min-w-[80px] transition-all ${activeDayIndex === index ? 'bg-w8-red border-w8-red text-white' : 'bg-white/5 border-white/10 text-gray-500'}`}>
+                         <span className="text-[10px] font-bold uppercase">{isToday ? "TODAY" : dayObj.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                         <span className="text-lg font-black">{dayObj.getDate()}</span>
+                      </button>
+                  );
+               })}
             </div>
 
             <div className="bg-white/5 border border-white/10 p-5 rounded-xl mb-6 relative overflow-hidden">
-               <div className="flex justify-between items-start mb-6">
-                  <div>
-                     <h2 className="text-2xl font-black italic uppercase text-white">{new Date(weeklyPlan.days[activeDayIndex].date).toLocaleDateString('en-US', { weekday: 'long' })}</h2>
-                     <div className="flex items-center gap-2 mt-1">
-                        <p className="text-xs text-w8-red font-mono tracking-widest uppercase">{weeklyPlan.days[activeDayIndex].focus}</p>
-                        <div className="flex items-center gap-2 bg-red-900/30 px-3 py-1 rounded border border-red-900/50">
-                            <Flame size={12} className="text-w8-red" />
-                            <div className="flex items-center gap-2">
-                                <span className="text-[10px] text-white font-mono font-bold">{calculateCalories(weeklyPlan.days[activeDayIndex])} KCAL <span className="text-gray-500 font-normal">(GYM)</span></span>
-                                {dailyTDEE && (<><div className="w-[1px] h-3 bg-red-800"></div><span className="text-[10px] text-white font-mono font-bold">{dailyTDEE} KCAL <span className="text-gray-500 font-normal">(DAY)</span></span></>)}
-                            </div>
-                        </div>
-                     </div>
-                  </div>
-                  <button onClick={() => toggleEdit(activeDayIndex)} className={`p-2 rounded-full border transition-all ${editingDay === activeDayIndex ? 'bg-green-500 border-green-500 text-black' : 'border-white/20 text-gray-400'}`}>{saving ? <div className="animate-spin w-4 h-4 border-2 border-black border-t-transparent rounded-full"/> : (editingDay === activeDayIndex ? <Lock size={16} /> : <Edit3 size={16} />)}</button>
-               </div>
+               {weeklyPlan.days[activeDayIndex].focus === "Rest" || weeklyPlan.days[activeDayIndex].focus === "Rest Day" || weeklyPlan.days[activeDayIndex].day === "Rest" ? (
+                   <div className="flex flex-col items-center justify-center py-12">
+                       <Coffee className="text-gray-600 mb-4" size={64} />
+                       <h2 className="text-2xl font-black italic uppercase text-gray-500">Recovery Day</h2>
+                       <p className="text-xs text-gray-600 mt-2 font-mono max-w-[200px] text-center">
+                           NO COMBAT OPERATIONS. FOCUS ON SLEEP AND NUTRITION.
+                       </p>
+                   </div>
+               ) : (
+                   <>
+                       <div className="flex justify-between items-start mb-6">
+                          <div>
+                             <h2 className="text-2xl font-black italic uppercase text-white">{new Date(weeklyPlan.days[activeDayIndex].date).toLocaleDateString('en-US', { weekday: 'long' })}</h2>
+                             <div className="flex items-center gap-2 mt-1">
+                                <p className="text-xs text-w8-red font-mono tracking-widest uppercase">{weeklyPlan.days[activeDayIndex].focus}</p>
+                                <div className="flex items-center gap-2 bg-red-900/30 px-3 py-1 rounded border border-red-900/50">
+                                    <Flame size={12} className="text-w8-red" />
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-white font-mono font-bold">{calculateCalories(weeklyPlan.days[activeDayIndex])} KCAL <span className="text-gray-500 font-normal">(GYM)</span></span>
+                                        {dailyTDEE && (<><div className="w-[1px] h-3 bg-red-800"></div><span className="text-[10px] text-white font-mono font-bold">{dailyTDEE} KCAL <span className="text-gray-500 font-normal">(DAY)</span></span></>)}
+                                    </div>
+                                </div>
+                             </div>
+                          </div>
+                          <button onClick={() => toggleEdit(activeDayIndex)} className={`p-2 rounded-full border transition-all ${editingDay === activeDayIndex ? 'bg-green-500 border-green-500 text-black' : 'border-white/20 text-gray-400'}`}>{saving ? <div className="animate-spin w-4 h-4 border-2 border-black border-t-transparent rounded-full"/> : (editingDay === activeDayIndex ? <Lock size={16} /> : <Edit3 size={16} />)}</button>
+                       </div>
 
-               <div className="space-y-4">
-                  {weeklyPlan.days[activeDayIndex].exercises.map((ex: any, i: number) => (
-                     <div key={i} className="bg-black/40 p-4 rounded-lg border border-white/5 flex flex-col gap-2 relative">
-                        <div className="flex justify-between items-center pr-8"> 
-                           {editingDay === activeDayIndex ? (<input className="bg-transparent border-b border-gray-600 text-white font-bold uppercase italic w-full focus:outline-none focus:border-w8-red" value={ex.name} onChange={(e) => updateExercise(activeDayIndex, i, 'name', e.target.value)} />) : (<h4 className="font-bold text-white uppercase italic text-sm">{ex.name}</h4>)}
-                        </div>
-                        <button onClick={() => fetchDemo(ex.name)} className="absolute top-4 right-4 text-gray-500 hover:text-w8-red transition-colors"><PlayCircle size={20} /></button>
-                        
-                        <div className="flex justify-between items-start mt-1">
-                           <div className="flex flex-col gap-1">
-                               <span className="text-xs text-gray-400 font-mono">{ex.sets} Sets x {ex.reps}</span>
-                               
-                               {/* --- PLATE INTELLIGENCE (SHOWS EXACT LOAD) --- */}
-                               <div className="flex items-center gap-1.5 mt-1 bg-white/5 px-2 py-1 rounded border border-white/10 w-fit">
-                                   <Disc size={10} className="text-w8-red"/>
-                                   <span className="text-[9px] font-mono font-bold text-gray-300 uppercase">
-                                       {editingDay === activeDayIndex ? "CALCULATING..." : getPlateMath(ex.name, ex.weight)}
-                                   </span>
-                               </div>
-                           </div>
+                       <div className="space-y-4">
+                          {weeklyPlan.days[activeDayIndex].exercises.map((ex: any, i: number) => (
+                             <div key={i} className="bg-black/40 p-4 rounded-lg border border-white/5 flex flex-col gap-2 relative">
+                                <div className="flex justify-between items-center pr-8"> 
+                                   {editingDay === activeDayIndex ? (<input className="bg-transparent border-b border-gray-600 text-white font-bold uppercase italic w-full focus:outline-none focus:border-w8-red" value={ex.name} onChange={(e) => updateExercise(activeDayIndex, i, 'name', e.target.value)} />) : (<h4 className="font-bold text-white uppercase italic text-sm">{ex.name}</h4>)}
+                                </div>
+                                <button onClick={() => fetchDemo(ex.name)} className="absolute top-4 right-4 text-gray-500 hover:text-w8-red transition-colors"><PlayCircle size={20} /></button>
+                                
+                                <div className="flex justify-between items-start mt-1">
+                                   <div className="flex flex-col gap-1 w-full">
+                                       <span className="text-xs text-gray-400 font-mono">{ex.sets} Sets x {ex.reps} Reps</span>
+                                       
+                                       <div className="flex items-center gap-1.5 mt-1 bg-white/5 px-2 py-1 rounded border border-white/10 w-fit">
+                                           <Disc size={10} className="text-w8-red"/>
+                                           <span className="text-[9px] font-mono font-bold text-gray-300 uppercase">
+                                               {editingDay === activeDayIndex ? "CALCULATING..." : getPlateMath(ex.name, ex.weight)}
+                                           </span>
+                                       </div>
+                                       
+                                       {/* FULL WIDTH WEIGHT DISPLAY FOR COMPLEX STRINGS */}
+                                       <div className="mt-2 bg-black border border-white/10 p-2 rounded text-[10px] text-white font-mono break-words leading-relaxed">
+                                            {editingDay === activeDayIndex ? (
+                                                <textarea className="bg-transparent w-full outline-none text-white h-16" value={ex.weight} onChange={(e) => updateExercise(activeDayIndex, i, 'weight', e.target.value)} />
+                                            ) : (
+                                                <span className="text-w8-red font-bold">{ex.weight}</span>
+                                            )}
+                                       </div>
 
-                           <div className="flex items-center gap-2">
-                               <span className="text-[10px] text-gray-500 uppercase">LOAD:</span>
-                               {editingDay === activeDayIndex ? (
-                                   <input type="text" className="bg-white/10 w-24 p-1 rounded text-center text-white text-xs font-bold" value={ex.weight} onChange={(e) => updateExercise(activeDayIndex, i, 'weight', e.target.value)} />
-                               ) : (
-                                   <span className="text-w8-red font-black text-lg">
-                                       {/* Display weight cleanly */}
-                                       {isNaN(parseInt(ex.weight)) ? "" : ex.weight + " KG"}
-                                       {/* If it's text, displayed by logic above, or handle here if preferred */}
-                                       {isNaN(parseInt(ex.weight)) ? <span className="text-xs text-white">{ex.weight}</span> : ""}
-                                   </span>
-                               )}
-                           </div>
-                        </div>
-                        <p className="text-[9px] text-gray-600 uppercase tracking-wide mt-1 border-t border-white/5 pt-2">{ex.notes}</p>
-                     </div>
-                  ))}
-               </div>
+                                   </div>
+                                </div>
+                                <p className="text-[9px] text-gray-600 uppercase tracking-wide mt-1 border-t border-white/5 pt-2">{ex.notes}</p>
+                             </div>
+                          ))}
+                       </div>
+                   </>
+               )}
             </div>
 
             <div className="flex gap-3">
