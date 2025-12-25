@@ -69,10 +69,11 @@ function App() {
   const location = useLocation();
 
   // Hide Navigation on specific pages
+  // Note: .startsWith('/trainer') handles both /trainer/dashboard and /trainer/client/:id
   const hideNav = 
     location.pathname === '/' || 
     location.pathname === '/login' || 
-    location.pathname === '/oracle' || // <--- ADDED THIS LINE
+    location.pathname === '/oracle' || 
     location.pathname.startsWith('/trainer') || 
     location.pathname.startsWith('/admin');
 
@@ -102,7 +103,9 @@ function App() {
 
         {/* --- TRAINER ROUTES (Only 'trainer' can access) --- */}
         <Route path="/trainer/dashboard" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerDashboard /></ProtectedRoute>} />
-        <Route path="/trainer/clients" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerClientManager /></ProtectedRoute>} />
+        
+        {/* 👇 THIS IS THE FIXED ROUTE 👇 */}
+        <Route path="/trainer/client/:clientId" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerClientManager /></ProtectedRoute>} />
 
         {/* --- CATCH ALL --- */}
         <Route path="*" element={<Navigate to="/" replace />} />
