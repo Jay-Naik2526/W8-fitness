@@ -1,22 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { Users, ChevronRight, Activity, Search } from "lucide-react";
+import { Users, ChevronRight, Activity } from "lucide-react";
 import { Link } from 'react-router-dom';
 
 export default function TrainerDashboard() {
   const [squad, setSquad] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const trainerId = JSON.parse(localStorage.getItem('w8_user') || '{}').id; // Get logged in trainer ID
+  const trainerId = JSON.parse(localStorage.getItem('w8_user') || '{}').id; 
+
+  // 👇 SMART BACKEND URL DETECTOR
+  const API_BASE = window.location.hostname === "localhost" 
+    ? "http://localhost:5000" 
+    : "https://w8-fitness-backend-api.onrender.com";
 
   useEffect(() => {
-    fetch(`https://w8-fitness-backend-api.onrender.com/api/trainer/squad/${trainerId}`)
+    fetch(`${API_BASE}/api/trainer/squad/${trainerId}`)
       .then(res => res.json())
       .then(data => { setSquad(data); setLoading(false); })
       .catch(err => console.error(err));
-  }, []);
+  }, [trainerId]);
 
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-8 relative overflow-x-hidden">
-      {/* Background Grid */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none opacity-20" />
 
       <header className="mb-10 relative z-10">
@@ -44,12 +48,11 @@ export default function TrainerDashboard() {
                       
                       <div className="flex items-center gap-4 mb-6">
                           <div className="w-16 h-16 rounded-full bg-gray-800 border-2 border-white/10 overflow-hidden">
-                              {/* Placeholder Image or Real if available */}
-                              <div className="w-full h-full flex items-center justify-center font-black text-2xl text-gray-600">{client.name[0]}</div>
+                              <div className="w-full h-full flex items-center justify-center font-black text-2xl text-gray-600">{client.name ? client.name[0] : '?'}</div>
                           </div>
                           <div>
                               <h3 className="text-xl font-black italic uppercase text-white group-hover:text-w8-red transition-colors">{client.name}</h3>
-                              <p className="text-[10px] font-mono text-gray-500">{client.email}</p>
+                              <p className="text-[10px] font-mono text-gray-500">{client.phone || client.email}</p>
                           </div>
                       </div>
 

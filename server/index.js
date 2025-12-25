@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const ytsr = require('yt-search'); // <--- The magic tool
+const ytsr = require('yt-search'); 
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -32,7 +32,6 @@ app.get('/api/proxy/video', async (req, res) => {
     if (!query) return res.status(400).send("No query");
 
     // We search specifically for MuscleWiki content first
-    // Example: "Barbell Squat MuscleWiki"
     const searchTerm = `${query} exercise form musclewiki`;
 
     console.log(`>> SEARCHING YOUTUBE: ${searchTerm}`);
@@ -69,8 +68,27 @@ app.use('/api/workouts', workoutRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/trainer', trainerRoutes);
 
+// ==================================================
+// 👇 DATABASE CONNECTION WITH AUTO-FIX
+// ==================================================
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log(">> W8 SYSTEM: DATABASE CONNECTED"))
+  .then(async () => {
+    console.log(">> W8 SYSTEM: DATABASE CONNECTED");
+
+    // --- FIX START: Remove old unique index on email ---
+    try {
+      // This command tells MongoDB to delete the 'email_1' index from the 'users' collection
+      await mongoose.connection.collection('users').dropIndex('email_1');
+      console.log(">> SUCCESS: Old 'email' unique index has been REMOVED from the database.");
+    } catch (err) {
+      if (err.codeName === 'IndexNotFound') {
+        console.log(">> INFO: Email index was already clean.");
+      } else {
+        console.log(">> NOTICE: DB check skipped (Index might not exist):", err.message);
+      }
+    }
+    // --- FIX END ---
+  })
   .catch((err) => console.error(">> SYSTEM ERROR: DB CONNECTION FAILED", err));
 
 app.get('/ping', (req, res) => {

@@ -3,15 +3,21 @@ const mongoose = require('mongoose');
 const UserSchema = new mongoose.Schema({
   // --- IDENTITY ---
   name: { type: String, required: true, trim: true },
-  email: { type: String, required: true, unique: true, trim: true, lowercase: true },
+  
+  // 👇 PHONE IS NOW THE MAIN ID (Required & Unique)
+  phone: { type: String, required: true, unique: true, trim: true },
+  
+  // 👇 EMAIL IS NOW OPTIONAL (Not required, no unique constraint to avoid null conflicts)
+  email: { type: String, trim: true, lowercase: true, default: "" },
+
   password: { type: String, required: true },
   image: { type: String, default: "" },
 
-  // --- NEW FIELDS FOR LANDING PAGE ---
-  gender: { type: String, enum: ['Male', 'Female'], default: 'Male' }, // <--- FOR GROUPING
-  bio: { type: String, default: "" }, // <--- FOR "200+ Clients"
-  // ----------------------------------
+  // --- NEW FIELDS ---
+  gender: { type: String, enum: ['Male', 'Female'], default: 'Male' }, 
+  bio: { type: String, default: "" }, 
   status: { type: String, enum: ['pending', 'active'], default: 'pending' },
+  
   // --- ROLES ---
   role: {
     type: String,

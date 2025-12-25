@@ -5,6 +5,7 @@ const DietPlan = require('../models/DietPlan');
 const bcrypt = require('bcryptjs');
 const Plan = require('../models/Plan');
 const Notification = require('../models/Notification');
+
 // ==================================================
 // 1. ADMIN DASHBOARD STATS
 // ==================================================
@@ -32,9 +33,9 @@ router.get('/stats', async (req, res) => {
 // ==================================================
 router.get('/clients', async (req, res) => {
     try {
-        // FIXED: Added 'status' to the select list so frontend can see "pending"
+        // FIXED: Added 'phone' to select list
         const clients = await User.find({ role: 'client' })
-                                .select('name email tier goal trainerId lastActive status') 
+                                .select('name phone email tier goal trainerId lastActive status') 
                                 .populate('trainerId', 'name')
                                 .sort({ createdAt: -1 });
         res.json(clients);
@@ -48,7 +49,8 @@ router.get('/clients', async (req, res) => {
 // ==================================================
 router.get('/trainers', async (req, res) => {
     try {
-        const trainers = await User.find({ role: 'trainer' }).select('name email specialization tier image goal bio gender');
+        // FIXED: Added 'phone' to select list
+        const trainers = await User.find({ role: 'trainer' }).select('name phone email specialization tier image goal bio gender');
         
         // Count clients for each trainer
         const trainerData = await Promise.all(trainers.map(async (t) => {
@@ -93,8 +95,9 @@ router.get('/inspect/:userId', async (req, res) => {
 // ==================================================
 router.get('/squad/:trainerId', async (req, res) => {
     try {
+        // FIXED: Added 'phone' to select list
         const squad = await User.find({ trainerId: req.params.trainerId })
-                              .select('name email goal tier lastActive');
+                              .select('name phone email goal tier lastActive');
         res.json(squad);
     } catch (err) { res.status(500).json({ error: "Squad Lookup Failed" }); }
 });
@@ -109,6 +112,7 @@ router.post('/seed-trainers', async (req, res) => {
 
         const commonPassword = await bcrypt.hash("w8fitness", 10);
 
+        // FIXED: Added 'phone' field to all seed data (Required by new Schema)
         const roster = [
             // ===========================================
             // MALE DIVISION
@@ -117,17 +121,19 @@ router.post('/seed-trainers', async (req, res) => {
             // --- COMMANDERS (15+ Years) ---
             {
                 name: "Ajay Kahar",
+                phone: "9800000001",
                 email: "ajay@w8.com",
                 password: commonPassword,
                 role: "trainer",
                 gender: "Male",
                 tier: "COMMANDER",
                 goal: "STRENGTH",
-                image: "", // Add URL if you have one, or leave empty for default
+                image: "", 
                 bio: "20 Years Active Duty • 150+ Transformations. A veteran of the iron game, specializing in foundational strength and drastic body recomposition. His methods are old-school, proven, and non-negotiable."
             },
             {
                 name: "Shakir Madari",
+                phone: "9800000002",
                 email: "shakir@w8.com",
                 password: commonPassword,
                 role: "trainer",
@@ -140,6 +146,7 @@ router.post('/seed-trainers', async (req, res) => {
             // --- ELITE (10+ Years) ---
             {
                 name: "Bhavesh Goswami",
+                phone: "9800000003",
                 email: "bhavesh@w8.com",
                 password: commonPassword,
                 role: "trainer",
@@ -152,6 +159,7 @@ router.post('/seed-trainers', async (req, res) => {
             // --- OPERATIVES (Mid-Level Experts) ---
             {
                 name: "Ronak",
+                phone: "9800000004",
                 email: "ronak@w8.com",
                 password: commonPassword,
                 role: "trainer",
@@ -162,6 +170,7 @@ router.post('/seed-trainers', async (req, res) => {
             },
             {
                 name: "Kamal Prajapati",
+                phone: "9800000005",
                 email: "kamal@w8.com",
                 password: commonPassword,
                 role: "trainer",
@@ -172,6 +181,7 @@ router.post('/seed-trainers', async (req, res) => {
             },
             {
                 name: "Salman",
+                phone: "9800000006",
                 email: "salman@w8.com",
                 password: commonPassword,
                 role: "trainer",
@@ -182,6 +192,7 @@ router.post('/seed-trainers', async (req, res) => {
             },
             {
                 name: "Vrund Patel",
+                phone: "9800000007",
                 email: "vrund@w8.com",
                 password: commonPassword,
                 role: "trainer",
@@ -196,6 +207,7 @@ router.post('/seed-trainers', async (req, res) => {
             // ===========================================
             {
                 name: "Mayuri Mistry",
+                phone: "9800000008",
                 email: "mayuri@w8.com",
                 password: commonPassword,
                 role: "trainer",
@@ -206,6 +218,7 @@ router.post('/seed-trainers', async (req, res) => {
             },
             {
                 name: "Hetal Sumara",
+                phone: "9800000009",
                 email: "hetal@w8.com",
                 password: commonPassword,
                 role: "trainer",
@@ -223,24 +236,30 @@ router.post('/seed-trainers', async (req, res) => {
         res.status(500).json({ error: "Roster Deployment Failed" });
     }
 });
+
 // ==================================================
 // 8. ADD NEW TRAINER (RECRUITMENT)
 // ==================================================
 router.post('/add-trainer', async (req, res) => {
     try {
-        const { name, email, specialization, tier, image, gender, bio } = req.body;
+        // FIXED: Extract 'phone' and 'password' from body
+        const { name, phone, email, password, specialization, tier, image, gender, bio } = req.body;
         
-        const existing = await User.findOne({ email });
-        if (existing) return res.status(400).json({ error: "Email already active." });
+        // FIXED: Check validation against PHONE (primary key), not just email
+        const existing = await User.findOne({ phone });
+        if (existing) return res.status(400).json({ error: "Phone number already active." });
 
-        const hashedPassword = await bcrypt.hash("w8fitness", 10);
+        // FIXED: Use provided password if available, else default
+        const passToHash = password || "w8fitness";
+        const hashedPassword = await bcrypt.hash(passToHash, 10);
         
         await User.create({
             name,
-            email,
+            phone, // <--- REQUIRED FIELD
+            email: email || "", // Optional
             password: hashedPassword,
             role: 'trainer',
-            goal: specialization,
+            goal: specialization || "General",
             tier: tier || 'ELITE',
             image: image || "",
             gender: gender || 'Male',
@@ -249,7 +268,8 @@ router.post('/add-trainer', async (req, res) => {
 
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: "Recruitment Failed" });
+        console.error(err); // Log error for debugging
+        res.status(500).json({ error: "Recruitment Failed: " + err.message });
     }
 });
 

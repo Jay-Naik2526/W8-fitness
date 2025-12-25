@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, User, ChevronRight, AlertCircle, Terminal, CheckCircle, Download, Share, PlusSquare, X } from "lucide-react";
+import { Lock, Phone, User, ChevronRight, AlertCircle, Terminal, CheckCircle, Download, Share, PlusSquare, X } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -13,6 +13,11 @@ export default function Login() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showIOSHelp, setShowIOSHelp] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+
+  // 👇 SMART BACKEND URL DETECTOR
+  const API_BASE = window.location.hostname === "localhost" 
+    ? "http://localhost:5000" 
+    : "https://w8-fitness-backend-api.onrender.com";
 
   useEffect(() => {
     // 1. Detect iOS
@@ -33,23 +38,18 @@ export default function Login() {
   }, []);
 
   const handleInstallClick = async () => {
-    // A. Android: Trigger Native Prompt
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-      }
-    } 
-    // B. iOS or Desktop: Show Manual Instructions
-    else {
+      if (outcome === 'accepted') setDeferredPrompt(null);
+    } else {
       setShowIOSHelp(true);
     }
   };
 
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    phone: '',
     password: ''
   });
 
@@ -66,7 +66,8 @@ export default function Login() {
     const endpoint = isRegister ? 'register' : 'login';
     
     try {
-      const res = await fetch(`https://w8-fitness-backend-api.onrender.com/api/auth/${endpoint}`, {
+      // 👇 USES SMART API_BASE (Local or Live automatically)
+      const res = await fetch(`${API_BASE}/api/auth/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -95,10 +96,10 @@ export default function Login() {
       else navigate('/dashboard');
 
     } catch (err: any) {
-      if (err.message.includes("PENDING")) {
+      if (err.message && err.message.includes("PENDING")) {
         setError("ACCESS DENIED: YOUR ID IS PENDING APPROVAL.");
       } else {
-        setError(err.message);
+        setError(err.message || "Connection Failed");
       }
     } finally {
       setLoading(false);
@@ -136,8 +137,8 @@ export default function Login() {
           )}
 
           <div className="bg-white/5 border border-white/10 p-3 rounded-lg flex items-center gap-3 focus-within:border-red-600 transition-colors">
-            <Mail size={18} className="text-gray-500" />
-            <input name="email" type="email" placeholder="EMAIL ID" className="bg-transparent w-full outline-none text-sm uppercase placeholder:text-gray-700" onChange={handleChange} required/>
+            <Phone size={18} className="text-gray-500" />
+            <input name="phone" type="tel" placeholder="PHONE NUMBER" className="bg-transparent w-full outline-none text-sm uppercase placeholder:text-gray-700" onChange={handleChange} required/>
           </div>
 
           <div className="bg-white/5 border border-white/10 p-3 rounded-lg flex items-center gap-3 focus-within:border-red-600 transition-colors">
@@ -168,7 +169,6 @@ export default function Login() {
           </button>
         </form>
 
-        {/* --- INSTALL APP BUTTON --- */}
         <div className="mt-6 flex flex-col gap-4 text-center">
             <button 
               onClick={handleInstallClick}
@@ -184,12 +184,10 @@ export default function Login() {
                 {isRegister ? 'Back to Login' : 'Apply for Membership'}
             </button>
         </div>
-
       </div>
 
       <div className="absolute bottom-6 text-[10px] text-gray-700 uppercase tracking-widest">W8 Fitness Systems © 2025</div>
 
-      {/* --- IOS INSTALL HELP MODAL --- */}
       {showIOSHelp && (
           <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4" onClick={() => setShowIOSHelp(false)}>
               <div className="bg-zinc-900 border-t md:border border-white/10 p-6 w-full md:max-w-sm rounded-t-2xl md:rounded-2xl pb-10 md:pb-6 relative animate-in slide-in-from-bottom duration-300" onClick={e => e.stopPropagation()}>
@@ -200,7 +198,7 @@ export default function Login() {
                           <Share className="text-blue-500" size={24} />
                           <div className="text-xs text-gray-400">
                               <span className="text-white font-bold block mb-0.5">Step 1</span>
-                              Tap the <span className="text-blue-400">Share Button</span> at the bottom of your screen.
+                              Tap the <span className="text-blue-400">Share Button</span>.
                           </div>
                       </div>
                       <div className="flex items-center gap-4 bg-black/50 p-3 rounded-lg border border-white/5">
@@ -215,7 +213,6 @@ export default function Login() {
               </div>
           </div>
       )}
-
     </div>
   );
 }

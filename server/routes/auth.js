@@ -8,30 +8,28 @@ const Plan = require('../models/Plan');
 const Notification = require('../models/Notification');
 
 // ==========================================
-// 1. REGISTER (Public Sign Up -> PENDING)
+// 1. REGISTER (USING PHONE)
 // ==========================================
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    // 👇 Get Phone instead of Email
+    const { name, phone, password } = req.body;
 
-    const userExists = await User.findOne({ email });
-    if (userExists) return res.status(400).json({ msg: "Email already registered." });
+    const userExists = await User.findOne({ phone });
+    if (userExists) return res.status(400).json({ msg: "Phone number already registered." });
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // ALL NEW PUBLIC SIGNUPS ARE 'PENDING' CLIENTS
     const newUser = new User({
       name,
-      email,
+      phone, // <--- Save Phone
       password: hashedPassword,
       role: 'client',      
       status: 'pending'    
     });
     
     await newUser.save();
-
-    // No token returned - they must wait for approval
     res.json({ msg: "Registration successful. Awaiting Admin Approval." });
 
   } catch (err) {
@@ -40,19 +38,20 @@ router.post('/register', async (req, res) => {
 });
 
 // ==========================================
-// 2. LOGIN (With MASTER ADMIN BYPASS)
+// 2. LOGIN (USING PHONE)
 // ==========================================
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    // 👇 Get Phone instead of Email
+    const { phone, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ phone });
     if (!user) return res.status(400).json({ msg: "User does not exist." });
 
     // --- MASTER OVERRIDE START ---
-    // If this is the Master Admin email, force UNLOCK and PROMOTE immediately.
-    // This prevents you from ever being locked out.
-    if (email === 'admin@w8.com') {
+    // 👇 CHANGED: Check for specific "Admin Phone" (Example: 10 Zeros)
+    // You can use this phone number to log in as admin immediately.
+    if (phone === '0000000000') {
         if (user.role !== 'admin' || user.status !== 'active') {
             user.role = 'admin';
             user.status = 'active';
@@ -79,6 +78,7 @@ router.post('/login', async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
+        phone: user.phone, // <--- Send back Phone
         email: user.email,
         tier: user.tier,
         role: user.role,
@@ -98,18 +98,19 @@ router.post('/login', async (req, res) => {
 // ==========================================
 router.post('/create-trainer', async (req, res) => {
     try {
-        const { name, email, password, tier } = req.body;
+        // 👇 Trainer creation now also needs a Phone
+        const { name, phone, email, password, tier } = req.body;
 
-        const userExists = await User.findOne({ email });
-        if (userExists) return res.status(400).json({ msg: "Email already taken" });
+        const userExists = await User.findOne({ phone });
+        if (userExists) return res.status(400).json({ msg: "Phone already taken" });
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Admins can create trainers who are immediately ACTIVE
         const newTrainer = new User({
             name,
-            email,
+            phone,  // <--- Required
+            email: email || "", // Optional
             password: hashedPassword,
             role: 'trainer',
             status: 'active', 

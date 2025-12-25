@@ -10,21 +10,26 @@ export default function AdminTrainers() {
   
   // ADD TRAINER STATE
   const [isAdding, setIsAdding] = useState(false);
-  const [newTrainer, setNewTrainer] = useState({ name: '', email: '', password: '', tier: 'ELITE' });
+  const [newTrainer, setNewTrainer] = useState({ name: '', phone: '', email: '', password: '', tier: 'ELITE' });
+
+  // 👇 SMART BACKEND URL DETECTOR
+  const API_BASE = window.location.hostname === "localhost" 
+    ? "http://localhost:5000" 
+    : "https://w8-fitness-backend-api.onrender.com";
 
   useEffect(() => { fetchTrainers(); }, []);
 
   const fetchTrainers = async () => {
       try {
-          const res = await fetch('https://w8-fitness-backend-api.onrender.com/api/admin/trainers');
+          const res = await fetch(`${API_BASE}/api/admin/trainers`);
           if (res.ok) setTrainers(await res.json());
       } catch (e) { console.error("Fetch Error"); }
   };
 
   const handleAddTrainer = async (e: React.FormEvent) => {
       e.preventDefault();
-      // Calls our new Auth Route to create Active Trainer directly
-      const res = await fetch('https://w8-fitness-backend-api.onrender.com/api/auth/create-trainer', {
+      
+      const res = await fetch(`${API_BASE}/api/admin/add-trainer`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newTrainer)
@@ -35,23 +40,24 @@ export default function AdminTrainers() {
       if(res.ok) {
           alert("OFFICER RECRUITED SUCCESSFULLY");
           setIsAdding(false);
-          setNewTrainer({ name: '', email: '', password: '', tier: 'ELITE' });
+          setNewTrainer({ name: '', phone: '', email: '', password: '', tier: 'ELITE' });
           fetchTrainers();
       } else {
-          alert("RECRUITMENT FAILED: " + data.msg);
+          alert("RECRUITMENT FAILED: " + (data.msg || data.error));
       }
   };
 
   const handleDeleteTrainer = async (id: string, e: any) => {
       e.stopPropagation();
       if(!window.confirm("CONFIRM TERMINATION? This will unassign all their clients.")) return;
-      const res = await fetch(`https://w8-fitness-backend-api.onrender.com/api/admin/delete-trainer/${id}`, { method: 'DELETE' });
+      
+      const res = await fetch(`${API_BASE}/api/admin/delete-trainer/${id}`, { method: 'DELETE' });
       if (res.ok) fetchTrainers();
   };
 
   const viewSquad = async (trainer: any) => {
       setSelectedTrainer(trainer);
-      const res = await fetch(`https://w8-fitness-backend-api.onrender.com/api/admin/squad/${trainer._id}`);
+      const res = await fetch(`${API_BASE}/api/admin/squad/${trainer._id}`);
       if (res.ok) setSquad(await res.json());
   };
 
@@ -85,7 +91,7 @@ export default function AdminTrainers() {
                      <span className="bg-w8-red/10 text-w8-red text-[10px] font-bold px-2 py-1 rounded uppercase">{t.tier || 'OPERATIVE'}</span>
                  </div>
                  <h3 className="text-xl font-black italic uppercase">{t.name}</h3>
-                 <p className="text-xs text-gray-500 font-mono mb-4">{t.email}</p>
+                 <p className="text-xs text-gray-500 font-mono mb-4">{t.phone || t.email}</p>
                  <div className="flex items-center gap-2 border-t border-white/5 pt-4 text-xs font-bold uppercase tracking-widest text-gray-400 group-hover:text-white">
                      <Users size={14} /> View Squad ({t.clientCount || 0})
                  </div>
@@ -106,7 +112,10 @@ export default function AdminTrainers() {
                       
                       <form onSubmit={handleAddTrainer} className="space-y-4">
                           <input required placeholder="FULL NAME" className="w-full bg-white/5 border border-white/10 p-3 rounded text-sm text-white outline-none focus:border-w8-red transition-colors" value={newTrainer.name} onChange={e => setNewTrainer({...newTrainer, name: e.target.value})} />
-                          <input required type="email" placeholder="EMAIL ID" className="w-full bg-white/5 border border-white/10 p-3 rounded text-sm text-white outline-none focus:border-w8-red transition-colors" value={newTrainer.email} onChange={e => setNewTrainer({...newTrainer, email: e.target.value})} />
+                          
+                          <input required type="tel" placeholder="PHONE NUMBER" className="w-full bg-white/5 border border-white/10 p-3 rounded text-sm text-white outline-none focus:border-w8-red transition-colors" value={newTrainer.phone} onChange={e => setNewTrainer({...newTrainer, phone: e.target.value})} />
+                          
+                          <input type="email" placeholder="EMAIL (OPTIONAL)" className="w-full bg-white/5 border border-white/10 p-3 rounded text-sm text-white outline-none focus:border-w8-red transition-colors" value={newTrainer.email} onChange={e => setNewTrainer({...newTrainer, email: e.target.value})} />
                           <input required type="password" placeholder="ASSIGN PASSWORD" className="w-full bg-white/5 border border-white/10 p-3 rounded text-sm text-white outline-none focus:border-w8-red transition-colors" value={newTrainer.password} onChange={e => setNewTrainer({...newTrainer, password: e.target.value})} />
                           
                           <div className="space-y-1">
@@ -128,7 +137,7 @@ export default function AdminTrainers() {
           )}
       </AnimatePresence>
 
-      {/* SQUAD MODAL (Existing) */}
+      {/* SQUAD MODAL */}
       <AnimatePresence>
          {selectedTrainer && (
              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -140,7 +149,7 @@ export default function AdminTrainers() {
                      <div className="p-6 max-h-[60vh] overflow-y-auto space-y-3">
                         {squad.length === 0 ? <p className="text-center text-gray-500 text-sm">NO ASSIGNED OPERATIVES</p> : squad.map(client => (
                             <div key={client._id} className="flex items-center justify-between bg-white/5 p-4 rounded-lg border border-white/5">
-                                <div className="flex items-center gap-3"><div className="p-2 bg-white/10 rounded-full"><User size={16}/></div><div><p className="font-bold text-sm uppercase">{client.name}</p><p className="text-[10px] text-gray-500 font-mono">{client.email}</p></div></div>
+                                <div className="flex items-center gap-3"><div className="p-2 bg-white/10 rounded-full"><User size={16}/></div><div><p className="font-bold text-sm uppercase">{client.name}</p><p className="text-[10px] text-gray-500 font-mono">{client.phone || client.email}</p></div></div>
                                 <span className="text-[10px] font-bold bg-w8-red/20 text-w8-red px-2 py-1 rounded uppercase">{client.goal}</span>
                             </div>
                         ))}
